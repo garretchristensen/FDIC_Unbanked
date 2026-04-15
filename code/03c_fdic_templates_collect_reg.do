@@ -45,7 +45,7 @@ svyset [pw=hhsupwgt]
 * ---- Recode 1=Yes / 2=No variables to 0/1 --------------------------------
 foreach v of varlist                                                         ///
     huse12mo huse12cc huse12mt huse12rm huse12rmany                         ///
-    husenowops husenowpp huse12AFSC                                          ///
+    husenowops husenowpp huse12afsc                                          ///
     huse12pdl huse12pwn huse12ral huse12atl huse12rto                       ///
     hcred12cc hcred12sc hcred12car hcred12hmln hcred12sl hcred12any         ///
     hcred12bnpl hcred12bnpldq huse12cryp                                    ///
