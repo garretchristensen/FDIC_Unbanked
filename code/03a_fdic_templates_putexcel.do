@@ -45,7 +45,7 @@
   -------------
     * Stata 17 or later
     * Run the SETUP section once per Stata session before any template
-    * Output goes to ../data/ as .xlsx files
+    * Output goes to output/ as .xlsx files (set via $output global)
 ============================================================================*/
 
 
@@ -55,6 +55,10 @@
 
 clear all
 set more off
+
+global data   "data"     // input data directory (relative to repo root)
+global output "output"   // output directory for .xlsx results
+
 set type double   // avoids floating-point rounding surprises
 
 * ---- Load data --------------------------------------------------------------
@@ -62,7 +66,7 @@ set type double   // avoids floating-point rounding surprises
 * Templates B, C, D also work on a single year; adjust CONFIGURE blocks as needed.
 local YEAR 2023
 
-use "data/hhmultiyear_analys.dta", clear
+use "${data}/hhmultiyear_analys.dta", clear
 keep if hryear4 == `YEAR'
 
 * ---- Survey design ----------------------------------------------------------
@@ -117,7 +121,7 @@ local diff_from  2021           // "prior" year for the Diff column
 local diff_to    2023           // "current" year for the Diff column
 local subpop     ""             // restrict universe: leave "" for all HH,
                                 //   or e.g. "hunbnk==2" for banked HH only
-local xlfile     "../data/table_A_example.xlsx"
+local xlfile     "${output}/table_A_example.xlsx"
 local sheet      "Table 1.1"
 local filemode   replace        // "replace" to start a new workbook; "modify"
                                 //   to add a sheet to an existing workbook
@@ -316,7 +320,7 @@ local outcomes  "huse12mo_b huse12cc_b huse12mt_b"   // space-separated list of 
 local out_labels "Money order" "Check cashing" "Money transfer"  // one label per outcome
 local year       2023          // single year
 local subpop     ""            // universe restriction: "" = all HH
-local xlfile     "../data/table_B_example.xlsx"
+local xlfile     "${output}/table_B_example.xlsx"
 local sheet      "Table B"
 local filemode   replace
 * ---- END CONFIGURE ----------------------------------------------------------
@@ -455,7 +459,7 @@ local cat_vals "1 2 3"          // category values (space-separated, in order)
 local cat_labs "Unbanked" "Underbanked" "Fully banked"  // matching labels
 local year     2023
 local subpop   ""               // "" = all HH; or condition like "hunbnk==1"
-local xlfile   "../data/table_C_example.xlsx"
+local xlfile   "${output}/table_C_example.xlsx"
 local sheet    "Table C"
 local filemode replace
 * ---- END CONFIGURE ----------------------------------------------------------
@@ -532,7 +536,7 @@ local cat_vals "1 2 3 4"        // category values, in the column order you want
 local cat_labs "Very interested" "Somewhat interested" "Not very interested" "Not at all interested"
 local years    "2019 2021 2023" // years to show as rows
 local subpop   "hunbnk==1"      // universe: unbanked HH (leave "" for all HH)
-local xlfile   "../data/table_D_example.xlsx"
+local xlfile   "${output}/table_D_example.xlsx"
 local sheet    "Table 1.4"
 local filemode replace
 * ---- END CONFIGURE ----------------------------------------------------------

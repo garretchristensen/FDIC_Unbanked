@@ -34,11 +34,10 @@ import delimited using "data/hhmultiyear/hh_multiyear_analys.csv", clear
 * --- Keep only supplement respondents ---
 keep if hsupresp == 1
 
-* --- Declare survey design ---
-svyset [pw=hhsupwgt]
-
 save "data/hhmultiyear_analys.dta", replace
 ```
+
+Note: do **not** call `svyset` here. The table scripts set up the full BRR survey design (including replicate weights) themselves.
 
 This dataset covers survey years 2009, 2011, 2013, 2015, 2017, 2019, 2021, and 2023.
 Use `hryear4` to subset to a specific year or set of years.
@@ -47,11 +46,11 @@ Use `hryear4` to subset to a specific year or set of years.
 
 ## Running the table scripts
 
-The scripts in `code/` should be run from the repo root with the working directory set there. They read from `data/hhmultiyear_analys.dta` (once it has been built per the setup above) and write `.xlsx` output to `data/`.
+The scripts in `code/` should be run from the repo root with the working directory set there. They read from `data/hhmultiyear_analys.dta` (once it has been built per the setup above) and write `.xlsx` output to `output/`.
 
-**To reproduce tables for a single year:**
-1. Run `01_fdic_tables_putexcel.do` — produces one `.xlsx` per table section
-2. Run `02_fdic_add_diffs_putexcel.do` — adds year-over-year difference and significance columns to the Excel files
+**To reproduce the published tables:**
+
+Run `01_fdic_tables_putexcel.do` — produces one `.xlsx` per table section in `output/`, exactly matching the report layout (three year columns + Difference).
 
 **To experiment with template approaches**, see the three template files described below.
 
@@ -62,10 +61,7 @@ The scripts in `code/` should be run from the repo root with the working directo
 ### Analysis scripts
 
 **`01_fdic_tables_putexcel.do`**  
-Main script to reproduce the report tables for a given survey year. Loads the multiyear dataset, subsets to `YEAR`, recodes variables, computes weighted estimates (`svy: mean`) by demographic subgroup, and writes results to Excel using `putexcel`. To adapt for a new year, update the `YEAR` and `PREV_YEAR` globals at the top.
-
-**`02_fdic_add_diffs_putexcel.do`**  
-Run after `01_` for a new survey year. Loads the multiyear dataset directly, computes estimates for both `CUR_YEAR` and `PREV_YEAR` in one pass, calculates year-over-year differences with two-sample z-tests, and writes the Diff and significance columns back into the Excel files. Significance conventions: `*` p < .05, `**` p < .01.
+Main script. Loads the multiyear dataset (2019, 2021, 2023), merges the 160 Census Bureau BRR replicate weights from `hhmultiyear/hhrep19_23.csv`, and writes each table to Excel. Layout exactly matches the published report: `Characteristic | 2019 | 2021 | 2023 | Difference (2023–2021)`. Significance (`*`) at the 10 percent level using BRR standard errors (Fay factor = 0.5). To update for a future survey year, change `Y1`/`Y2`/`Y3` in Section 0 and update the replicate weight file name.
 
 ---
 
@@ -93,5 +89,6 @@ Most advanced version. Type A is rewritten to use `svy: reg` (linear probability
 
 ## Requirements
 
-- Stata 17 or later
+- Stata 15 or later
 - `hhmultiyears.zip` downloaded from the FDIC website and extracted to `data/` (see Setup above)
+- `output/` directory must exist in the repo root before running `01_`

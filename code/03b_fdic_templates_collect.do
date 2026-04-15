@@ -30,7 +30,7 @@
   -------------
     * Stata 17 or later
     * Run the SETUP section once per Stata session
-    * Output goes to ../data/ as .xlsx files
+    * Output goes to output/ as .xlsx files (set via $output global)
 ============================================================================*/
 
 
@@ -40,12 +40,16 @@
 
 clear all
 set more off
+
+global data   "data"     // input data directory (relative to repo root)
+global output "output"   // output directory for .xlsx results
+
 set type double
 
 * ---- Load data and set survey design --------------------------------------
 * Keep all years needed for multi-year templates (Types A and D).
 * Adjust the inlist() if you want a different year range.
-use "data/hhmultiyear_analys.dta", clear
+use "${data}/hhmultiyear_analys.dta", clear
 keep if inlist(hryear4, 2017, 2019, 2021, 2023)
 svyset [pw=hhsupwgt]
 
@@ -174,7 +178,7 @@ local years      2019 2021 2023
 local diff_from  2021
 local diff_to    2023
 local subpop     ""            // "" = all HH; e.g. "hunbnk==2" = banked only
-local xlfile     "../data/table_A_example.xlsx"
+local xlfile     "${output}/table_A_example.xlsx"
 local sheet      "Table 1.1"
 local filemode   replace       // "replace" for new workbook; "modify" to add sheet
 * ---- END CONFIGURE ---------------------------------------------------------
@@ -317,7 +321,7 @@ local outcomes   "huse12mo_b huse12cc_b huse12mt_b"
 local out_labels `""Money order" "Check cashing" "Money transfer""'
 local year       2023
 local subpop     ""
-local xlfile     "../data/table_B_example.xlsx"
+local xlfile     "${output}/table_B_example.xlsx"
 local sheet      "Table B"
 * ---- END CONFIGURE ---------------------------------------------------------
 
@@ -380,7 +384,7 @@ di "Template B complete → `xlfile' [sheet: `sheet']"
 local catvar   hbankstatv6
 local year     2023
 local subpop   ""              // "" = all HH; e.g. "hunbnk==1" = unbanked only
-local xlfile   "../data/table_C_example.xlsx"
+local xlfile   "${output}/table_C_example.xlsx"
 local sheet    "Table C"
 * ---- END CONFIGURE ---------------------------------------------------------
 
@@ -413,7 +417,7 @@ di "Template C complete → `xlfile' [sheet: `sheet']"
 local catvar   hbankint        // categorical response variable
 local years    "2019 2021 2023"
 local subpop   "hunbnk==1"     // universe: unbanked HH; "" for all HH
-local xlfile   "../data/table_D_example.xlsx"
+local xlfile   "${output}/table_D_example.xlsx"
 local sheet    "Table 1.4"
 * ---- END CONFIGURE ---------------------------------------------------------
 
