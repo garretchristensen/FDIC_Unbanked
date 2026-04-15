@@ -236,8 +236,9 @@ program define fdic_demo_table
     if _rc == 0 {
         local pct = e(b)[1,1] * 100
         local se  = sqrt(e(V)[1,1]) * 100
-        local n   = e(N_sub)
-        if missing(`pct') | e(N_sub) < 5 {
+        * e(N_sub) only exists with subpop; fall back to e(N) for national row
+        local n   = cond(missing(e(N_sub)), e(N), e(N_sub))
+        if missing(`pct') | `n' < 5 {
             putexcel B`row' = "—"
         }
         else {
