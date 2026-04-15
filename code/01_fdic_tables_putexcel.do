@@ -3,14 +3,16 @@
   Reproduce tables from the Annual Report
 
   Author:  [Your name]
-  Data:    hh2023_analys.csv  (also structured for hh2025_analys.csv)
+  Data:    data/hhmultiyear_analys.dta  (built from FDIC hhmultiyears.zip; see README)
   Weight:  hhsupwgt  (household supplement weight)
-  Output:  ../data/  (one .xlsx per table section)
+  Output:  data/  (one .xlsx per table section)
 
-  To adapt for 2025:
-    1. Update YEAR global and CSV filename in Section 0
-    2. Verify variable names in Section 2 against 2025 metadata
-    3. Run and compare diff column against saved 2023 estimates
+  Run from the repo root directory.
+
+  To adapt for a new year:
+    1. Update YEAR and PREV_YEAR globals in Section 0
+    2. Verify variable names against the new year's metadata
+    3. Run 02_fdic_add_diffs_putexcel.do after this script to fill diff columns
 
   Stata version: 17+  (uses putexcel, svy subpop; collect not required)
 ============================================================================*/
@@ -26,16 +28,13 @@ set type double
 global YEAR       2023
 global PREV_YEAR  2021
 
-* Adjust path below when running on 2025 data
-global root   "../"
-global data   "${root}data"
-global src    "${root}hh2023/hh2023"
+global data   "data"   // relative to repo root; run this script from repo root
 
 /*----------------------------------------------------------------------------
   SECTION 1 — LOAD DATA AND DECLARE SURVEY DESIGN
 ----------------------------------------------------------------------------*/
-set type double
-import delimited using "${src}/hh2023_analys.csv", clear varnames(1)
+use "${data}/hhmultiyear_analys.dta", clear
+keep if hryear4 == ${YEAR}
 
 * CPS supplement: probability weight only (no explicit cluster/strata released)
 svyset [pw=hhsupwgt]

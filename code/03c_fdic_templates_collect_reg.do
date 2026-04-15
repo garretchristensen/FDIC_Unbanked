@@ -36,7 +36,10 @@ set more off
 set type double
 
 * ---- Load data and set survey design --------------------------------------
-import delimited using "../hh2023/hh2023/hh2023_analys.csv", clear
+* Keep all years needed for regression-based Type A diff estimates.
+* Adjust the inlist() if you want a different year range.
+use "data/hhmultiyear_analys.dta", clear
+keep if inlist(hryear4, 2017, 2019, 2021, 2023)
 svyset [pw=hhsupwgt]
 
 * ---- Recode 1=Yes / 2=No variables to 0/1 --------------------------------
@@ -56,10 +59,8 @@ gen byte underbanked       = (hbankstatv6 == 2)     if inlist(hbankstatv6, 1, 2,
 gen byte cashonly_unbanked = (hunbnkcashonly == 1)  if inlist(hunbnkcashonly, 1, 2)
 
 * ---- Year variable ---------------------------------------------------------
-gen int year = .
-foreach yr in 2017 2019 2021 2023 {
-    capture replace year = `yr' if year`yr' == 1
-}
+* hryear4 is already in the multiyear data; rename for consistency with templates.
+rename hryear4 year
 label variable year "Survey year"
 
 * ---- all_hh: constant for "All households" rows in collect ----------------

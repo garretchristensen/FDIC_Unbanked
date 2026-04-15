@@ -58,9 +58,12 @@ set more off
 set type double   // avoids floating-point rounding surprises
 
 * ---- Load data --------------------------------------------------------------
-* All survey years live in one CSV. Year indicator variables (year2017,
-* year2019, year2021, year2023) mark which year each row belongs to.
-import delimited using "../hh2023/hh2023/hh2023_analys.csv", clear
+* Template A uses a single year; set YEAR to the survey year you want.
+* Templates B, C, D also work on a single year; adjust CONFIGURE blocks as needed.
+local YEAR 2023
+
+use "data/hhmultiyear_analys.dta", clear
+keep if hryear4 == `YEAR'
 
 * ---- Survey design ----------------------------------------------------------
 * The public-use file has probability weights only (no cluster or strata).
@@ -109,7 +112,7 @@ di "Setup complete."
 
 * ---- CONFIGURE (edit these locals) -----------------------------------------
 local outcome    unbanked       // 0/1 outcome variable (append _b for recoded vars)
-local years      2019 2021 2023 // years shown as columns; must have year20XX indicators
+local years      2019 2021 2023 // years shown as columns; must exist in hryear4
 local diff_from  2021           // "prior" year for the Diff column
 local diff_to    2023           // "current" year for the Diff column
 local subpop     ""             // restrict universe: leave "" for all HH,
@@ -225,10 +228,10 @@ forvalues i = 1/`nrows' {
 
         * Build subpop condition: restrict to year; add universe restriction if specified
         if "`subpop'" == "" {
-            local sp_cond "year`yr'==1"
+            local sp_cond "hryear4==`yr'"
         }
         else {
-            local sp_cond "year`yr'==1 & (`subpop')"
+            local sp_cond "hryear4==`yr' & (`subpop')"
         }
 
         * Add demographic restriction (not needed for the national "all" row)

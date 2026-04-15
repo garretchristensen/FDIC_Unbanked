@@ -43,7 +43,10 @@ set more off
 set type double
 
 * ---- Load data and set survey design --------------------------------------
-import delimited using "../hh2023/hh2023/hh2023_analys.csv", clear
+* Keep all years needed for multi-year templates (Types A and D).
+* Adjust the inlist() if you want a different year range.
+use "data/hhmultiyear_analys.dta", clear
+keep if inlist(hryear4, 2017, 2019, 2021, 2023)
 svyset [pw=hhsupwgt]
 
 * ---- Recode 1=Yes / 2=No variables to 0/1 --------------------------------
@@ -62,12 +65,9 @@ gen byte unbanked          = (hunbnk == 1)          if inlist(hunbnk, 1, 2)
 gen byte underbanked       = (hbankstatv6 == 2)     if inlist(hbankstatv6, 1, 2, 3)
 gen byte cashonly_unbanked = (hunbnkcashonly == 1)  if inlist(hunbnkcashonly, 1, 2)
 
-* ---- Year variable (needed for Types B and D) ----------------------------
-* Creates a single integer year variable from the indicator dummies.
-gen int year = .
-foreach yr in 2017 2019 2021 2023 {
-    capture replace year = `yr' if year`yr' == 1
-}
+* ---- Year variable (needed for Types A and D) ----------------------------
+* hryear4 is already in the multiyear data; rename for consistency with templates.
+rename hryear4 year
 label variable year "Survey year"
 
 * ---- all_hh: constant variable for "All households" rows in collect ------
