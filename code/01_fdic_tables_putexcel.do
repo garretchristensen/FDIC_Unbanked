@@ -234,8 +234,8 @@ program define fdic_demo_table
         capture quietly svy, subpop(if `base_sp'): mean `outcome'
     }
     if _rc == 0 {
-        local pct = e(b)[1,1] * 100
-        local se  = sqrt(e(V)[1,1]) * 100
+        local pct = el(e(b),1,1) * 100
+        local se  = sqrt(el(e(V),1,1)) * 100
         * e(N_sub) only exists with subpop; fall back to e(N) for national row
         local n   = cond(missing(e(N_sub)), e(N), e(N_sub))
         if missing(`pct') | `n' < 5 {
@@ -270,9 +270,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & praceeth == `r'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -302,9 +302,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & pagegrp == `a'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -334,9 +334,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & peducgrp == `e'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -369,9 +369,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & hhincome2 == `iv'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -401,9 +401,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & pdisabl_age25to64 == `d'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -433,9 +433,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & hhtypev2 == `h'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -465,9 +465,9 @@ program define fdic_demo_table
             local cond "(`base_sp') & gtmetsta == `m'"
         }
         capture quietly svy, subpop(if `cond'): mean `outcome'
-        if _rc == 0 & e(N_sub) >= 5 & !missing(e(b)[1,1]) {
-            local pct = e(b)[1,1] * 100
-            local se  = sqrt(e(V)[1,1]) * 100
+        if _rc == 0 & e(N_sub) >= 5 & !missing(el(e(b),1,1)) {
+            local pct = el(e(b),1,1) * 100
+            local se  = sqrt(el(e(V),1,1)) * 100
             local n   = e(N_sub)
             putexcel B`row' = (`pct'), nformat("0.0")
             putexcel C`row' = (`se'),  nformat("0.0")
@@ -521,8 +521,8 @@ forvalues m = 1/6 {
     * Indicator for each method as the primary method
     capture quietly svy, subpop(if !inlist(hbnkaccm, -1, .)): mean byte(hbnkaccm == `m')
     if _rc == 0 {
-        local pct = e(b)[1,1] * 100
-        local se  = sqrt(e(V)[1,1]) * 100
+        local pct = el(e(b),1,1) * 100
+        local se  = sqrt(el(e(V),1,1)) * 100
         putexcel B`row' = (`pct'), nformat("0.0")
         putexcel C`row' = (`se'),  nformat("0.0")
     }
@@ -584,8 +584,8 @@ foreach v of local acc_vars {
     putexcel A`row' = "`lbl'"
     capture quietly svy, subpop(if !inlist(hbnkaccm1v2, -1, .)): mean `v'
     if _rc == 0 {
-        local pct = e(b)[1,1] * 100
-        local se  = sqrt(e(V)[1,1]) * 100
+        local pct = el(e(b),1,1) * 100
+        local se  = sqrt(el(e(V),1,1)) * 100
         putexcel B`row' = (`pct'), nformat("0.0")
         putexcel C`row' = (`se'),  nformat("0.0")
     }
@@ -638,8 +638,8 @@ forvalues c = 1/4 {
     putexcel A`row' = "`lbl'"
     capture quietly svy, subpop(if unbanked == 1): mean byte(husenowppops == `c')
     if _rc == 0 {
-        local pct = e(b)[1,1] * 100
-        local se  = sqrt(e(V)[1,1]) * 100
+        local pct = el(e(b),1,1) * 100
+        local se  = sqrt(el(e(V),1,1)) * 100
         putexcel B`row' = (`pct'), nformat("0.0")
         putexcel C`row' = (`se'),  nformat("0.0")
     }
@@ -718,12 +718,12 @@ forvalues s = 1/3 {
     local lbl : word `s' of `bstat_lbls'
     putexcel A`row' = "`lbl'"
     capture quietly svy, subpop(if hbankstatv6 == `s'): mean huse12rmany_b
-    local pct_any = e(b)[1,1] * 100
-    local se_any  = sqrt(e(V)[1,1]) * 100
+    local pct_any = el(e(b),1,1) * 100
+    local se_any  = sqrt(el(e(V),1,1)) * 100
     local n_s     = e(N_sub)
     capture quietly svy, subpop(if hbankstatv6 == `s'): mean huse12rm_b
-    local pct_nb = e(b)[1,1] * 100
-    local se_nb  = sqrt(e(V)[1,1]) * 100
+    local pct_nb = el(e(b),1,1) * 100
+    local se_nb  = sqrt(el(e(V),1,1)) * 100
     putexcel B`row' = (`pct_any'), nformat("0.0")
     putexcel C`row' = (`se_any'),  nformat("0.0")
     putexcel D`row' = (`pct_nb'),  nformat("0.0")
@@ -767,7 +767,7 @@ foreach v of local cred_vars {
     local col : word `ci' of `col_letters'
     capture quietly svy: mean `v'
     if _rc == 0 {
-        putexcel `col'`row' = (`=e(b)[1,1]*100'), nformat("0.0")
+        putexcel `col'`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
     }
 }
 local ++row
@@ -786,7 +786,7 @@ forvalues r = 1/7 {
         local col : word `ci' of `col_letters'
         capture quietly svy, subpop(if praceeth == `r'): mean `v'
         if _rc == 0 & e(N_sub) >= 5 {
-            putexcel `col'`row' = (`=e(b)[1,1]*100'), nformat("0.0")
+            putexcel `col'`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
         }
     }
     local ++row
@@ -806,7 +806,7 @@ forvalues s = 1/3 {
         local col : word `ci' of `col_letters'
         capture quietly svy, subpop(if hbankstatv6 == `s'): mean `v'
         if _rc == 0 & e(N_sub) >= 5 {
-            putexcel `col'`row' = (`=e(b)[1,1]*100'), nformat("0.0")
+            putexcel `col'`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
         }
     }
     local ++row
@@ -829,7 +829,7 @@ foreach iv of local inc_vals {
         local col : word `ci' of `col_letters'
         capture quietly svy, subpop(if hhincome2 == `iv'): mean `v'
         if _rc == 0 & e(N_sub) >= 5 {
-            putexcel `col'`row' = (`=e(b)[1,1]*100'), nformat("0.0")
+            putexcel `col'`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
         }
     }
     local ++row
@@ -873,7 +873,7 @@ forvalues s = 0/3 {
             capture quietly svy, subpop(if hbankstatv6 == `s'): mean `v'
         }
         if _rc == 0 & e(N_sub) >= 5 {
-            putexcel `col'`row' = (`=e(b)[1,1]*100'), nformat("0.0")
+            putexcel `col'`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
         }
     }
     local ++row
@@ -919,8 +919,8 @@ forvalues s = 1/3 {
     putexcel A`row' = "`lbl'"
     capture quietly svy, subpop(if hbankstatv6 == `s'): mean hcred12bnpl_b
     if _rc == 0 {
-        putexcel B`row' = (`=e(b)[1,1]*100'), nformat("0.0")
-        putexcel C`row' = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+        putexcel B`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
+        putexcel C`row' = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
         putexcel D`row' = (`=e(N_sub)')
     }
     local ++row
@@ -967,8 +967,8 @@ forvalues s = 1/3 {
     putexcel A`row' = "`lbl'"
     capture quietly svy, subpop(if hbankstatv6 == `s'): mean huse12cryp_b
     if _rc == 0 {
-        putexcel B`row' = (`=e(b)[1,1]*100'), nformat("0.0")
-        putexcel C`row' = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+        putexcel B`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
+        putexcel C`row' = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
         putexcel D`row' = (`=e(N_sub)')
     }
     local ++row
@@ -1007,15 +1007,15 @@ putexcel D1 = "SE"     , bold
 quietly svy: mean unbanked
 putexcel A2 = (${YEAR})
 putexcel B2 = "Unbanked"
-putexcel C2 = (`=e(b)[1,1]*100'), nformat("0.0")
-putexcel D2 = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+putexcel C2 = (`=el(e(b),1,1)*100'), nformat("0.0")
+putexcel D2 = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
 
 * National underbanked rate
 quietly svy: mean underbanked
 putexcel A3 = (${YEAR})
 putexcel B3 = "Underbanked"
-putexcel C3 = (`=e(b)[1,1]*100'), nformat("0.0")
-putexcel D3 = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+putexcel C3 = (`=el(e(b),1,1)*100'), nformat("0.0")
+putexcel D3 = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
 
 * Note: to build a multi-year trend, append rows from prior years manually
 * or re-run on each year's data and stack the resulting sheets
@@ -1035,8 +1035,8 @@ forvalues r = 1/7 {
     if _rc == 0 & e(N_sub) >= 5 {
         putexcel A`row' = (${YEAR})
         putexcel B`row' = "`lbl'"
-        putexcel C`row' = (`=e(b)[1,1]*100'), nformat("0.0")
-        putexcel D`row' = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+        putexcel C`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
+        putexcel D`row' = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
         local ++row
     }
 }
@@ -1056,8 +1056,8 @@ forvalues m = 1/6 {
     if _rc == 0 {
         putexcel A`row' = (${YEAR})
         putexcel B`row' = "`lbl'"
-        putexcel C`row' = (`=e(b)[1,1]*100'), nformat("0.0")
-        putexcel D`row' = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+        putexcel C`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
+        putexcel D`row' = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
         local ++row
     }
 }
@@ -1077,8 +1077,8 @@ forvalues a = 1/6 {
     if _rc == 0 & e(N_sub) >= 5 {
         putexcel A`row' = (${YEAR})
         putexcel B`row' = "`lbl'"
-        putexcel C`row' = (`=e(b)[1,1]*100'), nformat("0.0")
-        putexcel D`row' = (`=sqrt(e(V)[1,1])*100'), nformat("0.0")
+        putexcel C`row' = (`=el(e(b),1,1)*100'), nformat("0.0")
+        putexcel D`row' = (`=sqrt(el(e(V),1,1))*100'), nformat("0.0")
         local ++row
     }
 }
@@ -1101,8 +1101,8 @@ foreach iv of local inc_vals {
     local lbl : word `ic' of `inc_lbls'
     capture quietly svy, subpop(if hhincome2 == `iv'): mean husenowops_b
     if _rc == 0 {
-        local pct_ops = e(b)[1,1] * 100
-        local se_ops  = sqrt(e(V)[1,1]) * 100
+        local pct_ops = el(e(b),1,1) * 100
+        local se_ops  = sqrt(el(e(V),1,1)) * 100
     }
     else {
         local pct_ops = .
@@ -1110,8 +1110,8 @@ foreach iv of local inc_vals {
     }
     capture quietly svy, subpop(if hhincome2 == `iv'): mean husenowpp_b
     if _rc == 0 {
-        local pct_pp  = e(b)[1,1] * 100
-        local se_pp   = sqrt(e(V)[1,1]) * 100
+        local pct_pp  = el(e(b),1,1) * 100
+        local se_pp   = sqrt(el(e(V),1,1)) * 100
     }
     else {
         local pct_pp = .
@@ -1166,7 +1166,7 @@ foreach o of local all_outcomes {
     * National
     capture quietly svy: mean `o'
     if _rc == 0 {
-        post pf_est ("`o'") ("national") (0) (`=e(b)[1,1]*100') (`=sqrt(e(V)[1,1])*100') (`=e(N)')
+        post pf_est ("`o'") ("national") (0) (`=el(e(b),1,1)*100') (`=sqrt(el(e(V),1,1))*100') (`=e(N)')
     }
 
     * Demographic groups
@@ -1188,7 +1188,7 @@ foreach o of local all_outcomes {
             capture quietly svy, subpop(if `gv' == `val'): mean `o'
             if _rc == 0 & e(N_sub) >= 5 {
                 post pf_est ("`o'") ("`gv'") (`val') ///
-                    (`=e(b)[1,1]*100') (`=sqrt(e(V)[1,1])*100') (`=e(N_sub)')
+                    (`=el(e(b),1,1)*100') (`=sqrt(el(e(V),1,1))*100') (`=e(N_sub)')
             }
         }
     }

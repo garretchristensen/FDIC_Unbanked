@@ -103,7 +103,7 @@ foreach o of local all_outcomes {
         capture quietly svy, subpop(if hryear4==`yr'): mean `o'
         if _rc == 0 & e(N_sub) >= 5 {
             post pf_est ("`o'") ("national") (0) (`yr') ///
-                (`=e(b)[1,1]*100') (`=sqrt(e(V)[1,1])*100')
+                (`=el(e(b),1,1)*100') (`=sqrt(el(e(V),1,1))*100')
         }
 
         * Demographic subgroups
@@ -124,7 +124,7 @@ foreach o of local all_outcomes {
                 capture quietly svy, subpop(if hryear4==`yr' & `gv'==`val'): mean `o'
                 if _rc == 0 & e(N_sub) >= 5 {
                     post pf_est ("`o'") ("`gv'") (`val') (`yr') ///
-                        (`=e(b)[1,1]*100') (`=sqrt(e(V)[1,1])*100')
+                        (`=el(e(b),1,1)*100') (`=sqrt(el(e(V),1,1))*100')
                 }
             }
         }
