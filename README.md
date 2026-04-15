@@ -2,9 +2,70 @@
 
 Stata code to reproduce tables from the [FDIC National Survey of Unbanked and Underbanked Households](https://www.fdic.gov/analysis/household-survey/) annual report.
 
-Data: `hh2023_analys.csv` from the 2023 survey public use file  
-Weight: `hhsupwgt` (household supplement weight)  
-Output: one `.xlsx` file per table section, written to `data/`
+---
+
+## Setup
+
+### 1. Download the data
+
+Go to the [FDIC Household Survey page](https://www.fdic.gov/analysis/household-survey/) and download the **multiyear public use file** (`hhmultiyears.zip`). Save it to the `data/` folder in this repo.
+
+### 2. Extract the zip
+
+From the repo root:
+
+```bash
+unzip data/hhmultiyears.zip -d data/
+```
+
+This creates `data/hhmultiyear/` containing the analysis CSV and replicate weight files.
+
+### 3. Load and prepare the data in Stata
+
+Run this once to build the Stata dataset you will use for all table scripts:
+
+```stata
+set type double
+
+* --- Load main multiyear analysis file ---
+import delimited using "data/hhmultiyear/hh_multiyear_analys.csv", ///
+    clear stringcols(_all) numericcols(_all) na(".")
+save "data/hhmultiyear_analys.dta", replace
+
+* --- Load single-year replicate weights ---
+import delimited using "data/hhmultiyear/single_yr_rep.csv", clear
+save "data/single_yr_rep.dta", replace
+
+* --- Merge on household ID and survey year ---
+use "data/hhmultiyear_analys.dta", clear
+merge 1:1 hryear4 qstnum using "data/single_yr_rep.dta", nogen
+
+* --- Keep only supplement respondents ---
+keep if hsupresp == 1
+
+* --- Declare survey design with jackknife replicate weights ---
+* repwgt0 is the full-sample weight; repwgt1-repwgt160 are the 160 JKn replicates.
+* Scale = 0.025 (= 1/40 PSUs) and mse match the design used in the FDIC's
+* published R sample code (type="JKn", scale=0.025, combined.weights=TRUE).
+svyset [pw=repwgt0], jkrweight(repwgt1-repwgt160) vce(jackknife) mse
+
+save "data/hhmultiyear_analys.dta", replace
+```
+
+This dataset covers survey years 2009, 2011, 2013, 2015, 2017, 2019, 2021, and 2023.
+Use `hryear4` to subset to a specific year or set of years.
+
+---
+
+## Running the table scripts
+
+The scripts in `code/` should be run from the repo root with the working directory set there. They read from `data/hhmultiyear_analys.dta` (once it has been built per the setup above) and write `.xlsx` output to `data/`.
+
+**To reproduce tables for a single year:**
+1. Run `fdic_tables_putexcel.do` — produces one `.xlsx` per table section and saves `estimates_YEAR.dta`
+2. Run `fdic_add_diffs_putexcel.do` — adds year-over-year difference and significance columns to the Excel files (requires `estimates_YEAR.dta` from both the current and prior survey year)
+
+**To experiment with template approaches**, see the three template files described below.
 
 ---
 
@@ -45,4 +106,4 @@ Most advanced version. Type A is rewritten to use `svy: reg` (linear probability
 ## Requirements
 
 - Stata 17 or later
-- 2023 FDIC survey public use data (`hh2023/`)
+- `hhmultiyears.zip` downloaded from the FDIC website and extracted to `data/` (see Setup above)
