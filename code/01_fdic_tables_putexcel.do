@@ -82,8 +82,12 @@ label var huse12ral_b "Used refund anticipation loan (past 12 mo)"
 label var huse12atl_b "Used auto title loan (past 12 mo)"
 label var huse12rto_b "Used rent-to-own (past 12 mo)"
 
-* Any nonbank credit (pre-computed summary flag in data)
-gen byte anyafs_credit = (huse12AFSC == 1) if inlist(huse12AFSC, 1, 2)
+* Any nonbank credit — variable name changed across survey years in multiyear file:
+*   huse12AFSC   = 2013–2021
+*   huse12AFSCv3 = 2023+
+* Build from whichever version exists for the loaded year.
+capture gen byte anyafs_credit = (huse12AFSCv3 == 1) if inlist(huse12AFSCv3, 1, 2)
+if _rc != 0 capture gen byte anyafs_credit = (huse12AFSC == 1) if inlist(huse12AFSC, 1, 2)
 label var anyafs_credit "Used any nonbank credit product (past 12 mo)"
 
 * ── 2023-new products ────────────────────────────────────────────────────────

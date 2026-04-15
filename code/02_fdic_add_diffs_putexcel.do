@@ -54,7 +54,8 @@ foreach v in husenowops husenowpp {
 foreach v in huse12pdl huse12pwn huse12ral huse12atl huse12rto {
     capture gen byte `v'_b = (`v' == 1) if inlist(`v', 1, 2)
 }
-capture gen byte anyafs_credit = (huse12AFSC == 1) if inlist(huse12AFSC, 1, 2)
+capture gen byte anyafs_credit = (huse12AFSCv3 == 1) if inlist(huse12AFSCv3, 1, 2)
+if _rc != 0 capture gen byte anyafs_credit = (huse12AFSC == 1) if inlist(huse12AFSC, 1, 2)
 
 * ── New products ─────────────────────────────────────────────────────────────
 foreach v in hcred12bnpl hcred12bnpldq huse12cryp {
