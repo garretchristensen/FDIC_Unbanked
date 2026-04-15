@@ -30,24 +30,12 @@ set type double
 * --- Load main multiyear analysis file ---
 import delimited using "data/hhmultiyear/hh_multiyear_analys.csv", ///
     clear stringcols(_all) numericcols(_all) na(".")
-save "data/hhmultiyear_analys.dta", replace
-
-* --- Load single-year replicate weights ---
-import delimited using "data/hhmultiyear/single_yr_rep.csv", clear
-save "data/single_yr_rep.dta", replace
-
-* --- Merge on household ID and survey year ---
-use "data/hhmultiyear_analys.dta", clear
-merge 1:1 hryear4 qstnum using "data/single_yr_rep.dta", nogen
 
 * --- Keep only supplement respondents ---
 keep if hsupresp == 1
 
-* --- Declare survey design with jackknife replicate weights ---
-* repwgt0 is the full-sample weight; repwgt1-repwgt160 are the 160 JKn replicates.
-* Scale = 0.025 (= 1/40 PSUs) and mse match the design used in the FDIC's
-* published R sample code (type="JKn", scale=0.025, combined.weights=TRUE).
-svyset [pw=repwgt0], jkrweight(repwgt1-repwgt160) vce(jackknife) mse
+* --- Declare survey design ---
+svyset [pw=hhsupwgt]
 
 save "data/hhmultiyear_analys.dta", replace
 ```
