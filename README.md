@@ -91,7 +91,7 @@ Most advanced version. Type A is rewritten to use `svy: reg` (linear probability
 
 ## Requirements
 
-**Stata scripts:** Stata 15 or later
+**Stata scripts:** Stata 17 or later (the `collect` framework used in `03b` and `03c` requires Stata 17; `01` and `03a` require only Stata 15)
 
 **R scripts:** R 4.0 or later with packages: `haven`, `survey`, `dplyr`, `openxlsx`
 

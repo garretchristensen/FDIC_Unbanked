@@ -454,11 +454,11 @@ di "Template C complete → `xlfile' [sheet: `sheet']"
 *=============================================================================
 
 * ---- CONFIGURE (edit these) -----------------------------------------------
-local catvar   hbankint
+local catvar   hbankstatv6          // banking status (1=unbanked, 2=underbanked, 3=fully banked)
 local years    "2019 2021 2023"
-local subpop   "hunbnk==1"   // e.g. restrict to unbanked households only
+local subpop   ""                    // all households; hbankstatv6 covers everyone
 local xlfile   "${output}/table_D_example.xlsx"
-local sheet    "Table 1.4"
+local sheet    "Table D test"
 * ---- END CONFIGURE ---------------------------------------------------------
 
 * Discover categories using the full multi-year data (so no category is missed
