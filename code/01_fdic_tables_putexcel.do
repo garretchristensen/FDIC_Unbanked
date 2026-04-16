@@ -116,65 +116,88 @@ foreach v in hbnkaccm1v2 hbnkaccm5v2 {
   "NA" is written when subpop N < MIN_N or estimation fails.
   Blank cell when skip_y2 is set (intentionally not collected).
 ----------------------------------------------------------------------------*/
+* Drop any prior definition so the program can be re-run without "already defined" errors
 capture program drop fdic_est_row
+* Begin program definition
 program define fdic_est_row
+    * Required args: outcome variable name, grouping variable name (or "national"),
+    * the value of that grouping variable for this row, and the Excel row number.
+    * Optional: skip_y2 flag when the outcome was not collected in survey year 2 (2021).
     syntax, outcome(string) gv(string) gval(integer) row(integer) [skip_y2]
 
+    * Short alias so the row number is easier to type throughout
     local r `row'
 
-    * Estimate for each year
+    * --- ESTIMATION LOOP: run svy: mean for each of the three survey years ---
     forvalues yidx = 1/3 {
+        * If the caller set skip_y2 and we're on year 2, store missing and move on
         if `yidx' == 2 & "`skip_y2'" != "" {
-            local m`yidx' = .
-            local s`yidx' = .
-            continue
+            local m`yidx' = .   // no estimate to store
+            local s`yidx' = .   // no SE to store
+            continue             // skip to yidx == 3
         }
+        * Look up the actual four-digit calendar year for this index (e.g. Y1=2019)
         local y = ${Y`yidx'}
 
+        * Run the BRR-weighted mean; "capture quietly" prevents the loop from
+        * aborting if the subpopulation is empty or the estimator fails
         if "`gv'" == "national" {
+            * National row: no group filter — use the full sample for year y
             capture quietly svy, subpop(if hryear4 == `y'): mean `outcome'
         }
         else {
+            * Demographic subgroup row: restrict to the specific group value
             capture quietly svy, subpop(if hryear4 == `y' & `gv' == `gval'): mean `outcome'
         }
 
+        * Only store results when svy succeeded (_rc==0) AND the subpop is large
+        * enough to report (at least MIN_N unweighted observations)
         if _rc == 0 & e(N_sub) >= ${MIN_N} {
-            mat __B = e(b)
-            mat __V = e(V)
-            local m`yidx' = __B[1,1] * 100
-            local s`yidx' = sqrt(__V[1,1]) * 100
+            mat __B = e(b)                      // 1×1 coefficient matrix (the mean)
+            mat __V = e(V)                      // 1×1 variance-covariance matrix
+            local m`yidx' = __B[1,1] * 100     // convert proportion → percentage points
+            local s`yidx' = sqrt(__V[1,1]) * 100  // convert variance → SE in pct-pts
         }
         else {
+            * Estimation failed or subpop too small — flag both as missing
             local m`yidx' = .
             local s`yidx' = .
         }
     }
 
-    * Write year point estimates (cols B, C, D)
+    * --- OUTPUT LOOP: write point estimates into Excel columns B, C, D ---
     forvalues yidx = 1/3 {
+        * Map the loop index to the corresponding Excel column letter
         local col: word `yidx' of B C D
         if `yidx' == 2 & "`skip_y2'" != "" {
-            * Leave blank — not collected that year
+            * Leave cell blank — outcome was not collected in this survey year
         }
         else if !missing(`m`yidx'') {
+            * Valid estimate: write as a number formatted to one decimal place
             putexcel `col'`r' = (`m`yidx''), nformat("0.0")
         }
         else {
+            * Estimation failed or N too small: write the sentinel string "NA"
             putexcel `col'`r' = "NA"
         }
     }
 
-    * Difference column (col E): Y3 − Y2, with * if statistically significant
+    * --- DIFFERENCE COLUMN (col E): change from Y2 to Y3 in pct-pts ---
     if "`skip_y2'" != "" {
-        * Not applicable — leave blank
+        * Y2 was not collected, so no meaningful before/after comparison; leave blank
     }
     else if !missing(`m3') & !missing(`m2') {
+        * Both years estimated successfully — compute the raw change
         local diff    = `m3' - `m2'
+        * SE of the difference under independence: sqrt(Var_Y3 + Var_Y2)
         local se_diff = sqrt(`s3'^2 + `s2'^2)
+        * Format to one decimal place and strip leading/trailing spaces
         local dstr    = trim(string(`diff', "%5.1f"))
         if `se_diff' > 0 {
+            * Append * when the z-statistic exceeds 1.645 (≈ 90% two-tailed significance)
             if abs(`diff') / `se_diff' > 1.645 local dstr "`dstr'*"
         }
+        * Write the formatted string (e.g. "-2.3" or "1.4*") to column E
         putexcel E`r' = "`dstr'"
     }
     else {
