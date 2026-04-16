@@ -104,58 +104,66 @@ global Controls7 gtmetsta
 * the grouping variable (dv), and the value of that variable for this row (dval).
 * Rows with dv=="header" are section dividers (no regression run for them).
 * Rows with dv=="all" use the full sample (no group filter in the regression).
-* All macros are returned via c_local so they're visible to the calling scope.
+* All macros are set as globals so they're visible at the do-file top level.
 * Drop any prior definition so the file can be re-sourced without error
 capture program drop build_demo_rows
 program define build_demo_rows
     local k 0   // row counter; incremented before each definition
-    * Each line: bump counter, then set three c_locals for label, variable, value
-    local ++k; c_local lab`k' "All households";         c_local dv`k' "all";               c_local dval`k' 0
-    local ++k; c_local lab`k' "Race/Ethnicity";          c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Black";                 c_local dv`k' "praceeth";          c_local dval`k' 1
-    local ++k; c_local lab`k' "  Hispanic";              c_local dv`k' "praceeth";          c_local dval`k' 2
-    local ++k; c_local lab`k' "  Asian";                 c_local dv`k' "praceeth";          c_local dval`k' 3
-    local ++k; c_local lab`k' "  AIAN";                  c_local dv`k' "praceeth";          c_local dval`k' 4
-    local ++k; c_local lab`k' "  NHOPI";                 c_local dv`k' "praceeth";          c_local dval`k' 5
-    local ++k; c_local lab`k' "  White";                 c_local dv`k' "praceeth";          c_local dval`k' 6
-    local ++k; c_local lab`k' "  Other/Multiracial";     c_local dv`k' "praceeth";          c_local dval`k' 7
-    local ++k; c_local lab`k' "Age";                     c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  15-24";                 c_local dv`k' "pagegrp";           c_local dval`k' 1
-    local ++k; c_local lab`k' "  25-34";                 c_local dv`k' "pagegrp";           c_local dval`k' 2
-    local ++k; c_local lab`k' "  35-44";                 c_local dv`k' "pagegrp";           c_local dval`k' 3
-    local ++k; c_local lab`k' "  45-54";                 c_local dv`k' "pagegrp";           c_local dval`k' 4
-    local ++k; c_local lab`k' "  55-64";                 c_local dv`k' "pagegrp";           c_local dval`k' 5
-    local ++k; c_local lab`k' "  65+";                   c_local dv`k' "pagegrp";           c_local dval`k' 6
-    local ++k; c_local lab`k' "Education";               c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Less than HS";          c_local dv`k' "peducgrp";          c_local dval`k' 1
-    local ++k; c_local lab`k' "  HS diploma/GED";        c_local dv`k' "peducgrp";          c_local dval`k' 2
-    local ++k; c_local lab`k' "  Some college";          c_local dv`k' "peducgrp";          c_local dval`k' 3
-    local ++k; c_local lab`k' "  College degree";        c_local dv`k' "peducgrp";          c_local dval`k' 4
-    local ++k; c_local lab`k' "Annual Household Income"; c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Less than $15,000";     c_local dv`k' "hhincome2";         c_local dval`k' 1
-    local ++k; c_local lab`k' "  $15,000-$30,000";       c_local dv`k' "hhincome2";         c_local dval`k' 2
-    local ++k; c_local lab`k' "  $30,000-$50,000";       c_local dv`k' "hhincome2";         c_local dval`k' 3
-    local ++k; c_local lab`k' "  $50,000-$75,000";       c_local dv`k' "hhincome2";         c_local dval`k' 4
-    local ++k; c_local lab`k' "  $75,000 or more";       c_local dv`k' "hhincome2";         c_local dval`k' 5
-    local ++k; c_local lab`k' "  Unknown";               c_local dv`k' "hhincome2";         c_local dval`k' 99
-    local ++k; c_local lab`k' "Disability (ages 25-64)"; c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Disabled";              c_local dv`k' "pdisabl_age25to64"; c_local dval`k' 1
-    local ++k; c_local lab`k' "  Not disabled";          c_local dv`k' "pdisabl_age25to64"; c_local dval`k' 2
-    local ++k; c_local lab`k' "Household Type";          c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Married couple";        c_local dv`k' "hhtypev2";          c_local dval`k' 1
-    local ++k; c_local lab`k' "  Single mother";         c_local dv`k' "hhtypev2";          c_local dval`k' 2
-    local ++k; c_local lab`k' "  Other female-HH";       c_local dv`k' "hhtypev2";          c_local dval`k' 3
-    local ++k; c_local lab`k' "  Single father";         c_local dv`k' "hhtypev2";          c_local dval`k' 4
-    local ++k; c_local lab`k' "  Other male-HH";         c_local dv`k' "hhtypev2";          c_local dval`k' 5
-    local ++k; c_local lab`k' "  Female nonfamily";      c_local dv`k' "hhtypev2";          c_local dval`k' 6
-    local ++k; c_local lab`k' "  Male nonfamily";        c_local dv`k' "hhtypev2";          c_local dval`k' 7
-    local ++k; c_local lab`k' "  Other";                 c_local dv`k' "hhtypev2";          c_local dval`k' 8
-    local ++k; c_local lab`k' "Metro Status";            c_local dv`k' "header";            c_local dval`k' 0
-    local ++k; c_local lab`k' "  Metropolitan";          c_local dv`k' "gtmetsta";          c_local dval`k' 1
-    local ++k; c_local lab`k' "  Nonmetropolitan";       c_local dv`k' "gtmetsta";          c_local dval`k' 2
-    local ++k; c_local lab`k' "  Not identified";        c_local dv`k' "gtmetsta";          c_local dval`k' 3
-    * Pass the total row count back to the calling scope
-    c_local nrows `k'
+    * #delimit ; makes each semicolon a command terminator, so `local ++k;`
+    * executes and updates k BEFORE the next command's macros are expanded.
+    * Without this, Stata expands `k` across the whole physical line before
+    * running any command, so lab`k' would always resolve to lab0.
+    #delimit ;
+    * Each line: bump counter (one command), then set three globals (three commands).
+    * globals are used instead of c_local because c_local only works when the caller
+    * is another program — it silently does nothing when called from a do-file.
+    local ++k; global lab`k' "All households";         global dv`k' "all";               global dval`k' 0 ;
+    local ++k; global lab`k' "Race/Ethnicity";          global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Black";                 global dv`k' "praceeth";          global dval`k' 1 ;
+    local ++k; global lab`k' "  Hispanic";              global dv`k' "praceeth";          global dval`k' 2 ;
+    local ++k; global lab`k' "  Asian";                 global dv`k' "praceeth";          global dval`k' 3 ;
+    local ++k; global lab`k' "  AIAN";                  global dv`k' "praceeth";          global dval`k' 4 ;
+    local ++k; global lab`k' "  NHOPI";                 global dv`k' "praceeth";          global dval`k' 5 ;
+    local ++k; global lab`k' "  White";                 global dv`k' "praceeth";          global dval`k' 6 ;
+    local ++k; global lab`k' "  Other/Multiracial";     global dv`k' "praceeth";          global dval`k' 7 ;
+    local ++k; global lab`k' "Age";                     global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  15-24";                 global dv`k' "pagegrp";           global dval`k' 1 ;
+    local ++k; global lab`k' "  25-34";                 global dv`k' "pagegrp";           global dval`k' 2 ;
+    local ++k; global lab`k' "  35-44";                 global dv`k' "pagegrp";           global dval`k' 3 ;
+    local ++k; global lab`k' "  45-54";                 global dv`k' "pagegrp";           global dval`k' 4 ;
+    local ++k; global lab`k' "  55-64";                 global dv`k' "pagegrp";           global dval`k' 5 ;
+    local ++k; global lab`k' "  65+";                   global dv`k' "pagegrp";           global dval`k' 6 ;
+    local ++k; global lab`k' "Education";               global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Less than HS";          global dv`k' "peducgrp";          global dval`k' 1 ;
+    local ++k; global lab`k' "  HS diploma/GED";        global dv`k' "peducgrp";          global dval`k' 2 ;
+    local ++k; global lab`k' "  Some college";          global dv`k' "peducgrp";          global dval`k' 3 ;
+    local ++k; global lab`k' "  College degree";        global dv`k' "peducgrp";          global dval`k' 4 ;
+    local ++k; global lab`k' "Annual Household Income"; global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Less than $15,000";     global dv`k' "hhincome2";         global dval`k' 1 ;
+    local ++k; global lab`k' "  $15,000-$30,000";       global dv`k' "hhincome2";         global dval`k' 2 ;
+    local ++k; global lab`k' "  $30,000-$50,000";       global dv`k' "hhincome2";         global dval`k' 3 ;
+    local ++k; global lab`k' "  $50,000-$75,000";       global dv`k' "hhincome2";         global dval`k' 4 ;
+    local ++k; global lab`k' "  $75,000 or more";       global dv`k' "hhincome2";         global dval`k' 5 ;
+    local ++k; global lab`k' "  Unknown";               global dv`k' "hhincome2";         global dval`k' 99 ;
+    local ++k; global lab`k' "Disability (ages 25-64)"; global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Disabled";              global dv`k' "pdisabl_age25to64"; global dval`k' 1 ;
+    local ++k; global lab`k' "  Not disabled";          global dv`k' "pdisabl_age25to64"; global dval`k' 2 ;
+    local ++k; global lab`k' "Household Type";          global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Married couple";        global dv`k' "hhtypev2";          global dval`k' 1 ;
+    local ++k; global lab`k' "  Single mother";         global dv`k' "hhtypev2";          global dval`k' 2 ;
+    local ++k; global lab`k' "  Other female-HH";       global dv`k' "hhtypev2";          global dval`k' 3 ;
+    local ++k; global lab`k' "  Single father";         global dv`k' "hhtypev2";          global dval`k' 4 ;
+    local ++k; global lab`k' "  Other male-HH";         global dv`k' "hhtypev2";          global dval`k' 5 ;
+    local ++k; global lab`k' "  Female nonfamily";      global dv`k' "hhtypev2";          global dval`k' 6 ;
+    local ++k; global lab`k' "  Male nonfamily";        global dv`k' "hhtypev2";          global dval`k' 7 ;
+    local ++k; global lab`k' "  Other";                 global dv`k' "hhtypev2";          global dval`k' 8 ;
+    local ++k; global lab`k' "Metro Status";            global dv`k' "header";            global dval`k' 0 ;
+    local ++k; global lab`k' "  Metropolitan";          global dv`k' "gtmetsta";          global dval`k' 1 ;
+    local ++k; global lab`k' "  Nonmetropolitan";       global dv`k' "gtmetsta";          global dval`k' 2 ;
+    local ++k; global lab`k' "  Not identified";        global dv`k' "gtmetsta";          global dval`k' 3 ;
+    #delimit cr ;   // switch back to newline mode while still in ; mode (the ; terminates this command)
+    // Pass the total row count back to the calling scope; now safely in cr mode
+    global nrows = `k'
 end
 
 di "Setup complete."
@@ -195,8 +203,9 @@ local nyears = wordcount("`years'")
 * Master list of Excel column letters for converting a numeric index to a letter
 local colnames "A B C D E F G H I J K L M N O P Q R S T U V W X Y Z"
 
-* Populate lab*, dv*, dval*, and nrows locals in the current scope
-build_demo_rows   // sets lab1...labN, dv1...dvN, dval1...dvalN, nrows
+* Populate global lab*, dv*, dval*, and nrows — globals are used because
+* c_local only works when called from within a program, not from a do-file
+build_demo_rows   // sets $lab1...$labN, $dv1...$dvN, $dval1...$dvalN, $nrows
 
 * Restrict regression to only the years being shown (exclude e.g. year2017)
 * subinstr converts space-separated "2019 2021 2023" → "2019,2021,2023" for inlist()
@@ -209,19 +218,19 @@ else                 local universe "inlist(year, `year_comma') & (`subpop')"
 
 * Matrices: M = year estimates (%), DIFF = diff column (%)
 * Initialize both with missing so any skipped row stays blank in the output
-matrix M    = J(`nrows', `nyears', .)
-matrix DIFF = J(`nrows', 1, .)
+matrix M    = J($nrows, `nyears', .)
+matrix DIFF = J($nrows, 1, .)
 
 * ---- Estimation loop -------------------------------------------------------
 * One regression per demographic subgroup.
 * ib`diff_from'.year sets diff_from as the omitted (base) category so that
 * _b[`diff_to'.year] is directly the diff we want to display and test.
 
-forvalues i = 1/`nrows' {
+forvalues i = 1/$nrows {
     * Header rows have no associated group variable — skip them entirely
-    if "`dv`i''" == "header" continue
+    if "${dv`i'}" == "header" continue
 
-    if "`dv`i''" == "all" {
+    if "${dv`i'}" == "all" {
         * "All households" row: no group filter, just restrict to the analysis years
         * `capture quietly` suppresses output and catches failures without stopping the loop
         capture quietly svy, subpop(if `universe'): ///
@@ -229,7 +238,7 @@ forvalues i = 1/`nrows' {
     }
     else {
         * Demographic subgroup row: restrict to the specific value of the grouping variable
-        capture quietly svy, subpop(if `universe' & `dv`i''==`dval`i''): ///
+        capture quietly svy, subpop(if `universe' & ${dv`i'}==${dval`i'}): ///
             reg `outcome' ib`diff_from'.year
     }
 
@@ -294,8 +303,8 @@ putexcel `=word("`colnames'", `c_diff')'1 = "Diff (`diff_to'–`diff_from')"
 putexcel `=word("`colnames'", `c_sig')'1  = "Sig"
 
 * Row labels: data rows start at row 2 (row 1 holds headers)
-forvalues i = 1/`nrows' {
-    putexcel A`=`i'+1' = "`lab`i''"
+forvalues i = 1/$nrows {
+    putexcel A`=`i'+1' = "${lab`i'}"
 }
 
 * Dump both result matrices in a single call each; Stata fills the block automatically
@@ -303,7 +312,7 @@ putexcel B2 = matrix(M),    nformat("0.0")
 putexcel `=word("`colnames'", `c_diff')'2 = matrix(DIFF), nformat("0.0")
 
 * Write significance stars only where non-empty to avoid overwriting with blank strings
-forvalues i = 1/`nrows' {
+forvalues i = 1/$nrows {
     if "`sig`i''" != "" {
         putexcel `=word("`colnames'", `c_sig')'`=`i'+1' = "`sig`i''"
     }
