@@ -329,7 +329,11 @@ di "Template A complete → `xlfile' [sheet: `sheet']"
 
 *=============================================================================
 * TEMPLATE B — Multiple binary outcomes as columns × demographics as rows
-* (unchanged from v2)
+*
+* Note: svy:table is not a supported svy estimation command in Stata 19 with
+* vce(linearized). Restructured to use svy:mean with over(), which is
+* supported and computes all subgroup means in a single svy call per
+* demographic variable (more efficient than one call per category).
 *=============================================================================
 
 * ---- CONFIGURE (edit these) -----------------------------------------------
@@ -341,53 +345,47 @@ local xlfile     "${output}/table_B_example.xlsx"
 local sheet      "Table B"
 * ---- END CONFIGURE ---------------------------------------------------------
 
-* Build the collect statistic() option string dynamically from the outcomes list;
-* each outcome gets its own `statistic(mean varname)` clause
-local stat_string ""
-foreach out of local outcomes {
-    local stat_string "`stat_string' statistic(mean `out')"
-}
-
-* collect uses a pre-existing 0/1 year indicator rather than a subpop() option,
-* so construct the if-condition as a string for reuse across collect calls
-if "`subpop'" == "" local sp "year`year'==1"
-else                 local sp "year`year'==1 & (`subpop')"
+* year is a 4-digit integer in the 03c dataset (renamed from hryear4), not a 0/1
+* indicator, so filter with == rather than looking up a binary year variable
+if "`subpop'" == "" local sp "year == `year'"
+else                 local sp "year == `year' & (`subpop')"
 
 * Clear any results from a previous collect run before accumulating new chunks
 collect clear
 
-* "All households" row: tag this chunk with demo[all_hh] so the layout step
-* can place it as the first row of the output table
+* "All households" row: mean of all outcomes across the full subpop;
+* over(all_hh) works because all_hh == 1 for every observation
 collect, tag(demo[all_hh]): ///
-    svy, subpop(if `sp'): table all_hh, `stat_string'
+    svy, subpop(if `sp'): mean `outcomes', over(all_hh)
 
-* One collect call per demographic variable; each chunk is tagged with its variable
-* name so the layout step can stack them in the correct row order
+* One collect call per demographic variable; over() returns all categories in
+* a single svy pass — no loop over individual category values needed
 forvalues i = 1/$nControls {
     local dv ${Controls`i'}
     collect, tag(demo[`dv']): ///
-        svy, subpop(if `sp'): table `dv', `stat_string'
+        svy, subpop(if `sp'): mean `outcomes', over(`dv')
 }
 
-* Rename the internal result labels (mean(varname)) to human-readable column headers
+* Rename outcome variable labels in the var dimension to display headers;
+* svy:mean places variable names in the var dimension (not result as table did)
 local k = 0
 foreach out of local outcomes {
     local ++k
     local lbl : word `k' of `out_labels'
-    collect label levels result "mean(`out')" "`lbl'", modify
+    collect label levels var `out' "`lbl'", modify
 }
 
-* Build the row-dimension string: all_hh first, then each demographic variable,
-* each prefixed with its demo[] tag so collect knows which chunk to draw from
+* Build the row-dimension string: all_hh first, then each demographic variable
 local row_dim "demo[all_hh]#all_hh"
 forvalues i = 1/$nControls {
     local row_dim "`row_dim' demo[${Controls`i'}]#${Controls`i'}"
 }
 
-* Arrange collected results: rows = demographic groups, columns = outcome means
-collect layout (`row_dim') (result)
-* Format all estimate cells to one decimal place
-collect style cell, nformat(%6.1f)
+* Arrange collected results: rows = demographic groups, columns = outcome variables
+* var dimension holds the outcome names; result[_r_b] is the point estimate
+collect layout (`row_dim') (var)
+* Scale proportions to percentages and format to one decimal place
+collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
 
 * Write the formatted table to Excel
 collect export "`xlfile'", sheet("`sheet'") replace
@@ -407,9 +405,9 @@ local xlfile   "${output}/table_C_example.xlsx"
 local sheet    "Table C"
 * ---- END CONFIGURE ---------------------------------------------------------
 
-* Build the year + optional subpop filter (same pattern as Template B)
-if "`subpop'" == "" local sp "year`year'==1"
-else                 local sp "year`year'==1 & (`subpop')"
+* year is a 4-digit integer in this dataset — filter with == not a binary indicator
+if "`subpop'" == "" local sp "year == `year'"
+else                 local sp "year == `year' & (`subpop')"
 
 * Clear any prior collect results before running the proportion estimate
 collect clear
@@ -444,9 +442,9 @@ collect clear
 * Run a separate proportion estimate for each year and tag it with the year value
 * so the layout step can place each as its own row
 foreach yr of local years {
-    * Build the year + subpop filter for this iteration
-    if "`subpop'" == "" local sp "year`yr'==1"
-    else                 local sp "year`yr'==1 & (`subpop')"
+    * year is a 4-digit integer — filter with == not a binary indicator
+    if "`subpop'" == "" local sp "year == `yr'"
+    else                 local sp "year == `yr' & (`subpop')"
 
     * Tag this chunk with year[yr] so the layout step can use it as a row dimension
     collect, tag(year[`yr']): ///
