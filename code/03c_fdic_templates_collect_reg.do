@@ -31,22 +31,31 @@
 * SETUP — Run once per session
 *=============================================================================
 
+* Drop all loaded data, programs, and matrices from any previous run
 clear all
+* Disable the "more" prompt so long output scrolls without pausing
 set more off
 
 global data   "data"     // input data directory (relative to repo root)
 global output "output"   // output directory for .xlsx results
 
+* Store new variables as double-precision floats to avoid rounding in proportions
 set type double
 
 * ---- Load data and set survey design --------------------------------------
 * Keep all years needed for regression-based Type A diff estimates.
 * Adjust the inlist() if you want a different year range.
 use "${data}/hhmultiyear_analys.dta", clear
+* Drop observations outside the analysis window; reduces memory and prevents
+* spurious year coefficients in the regressions below
 keep if inlist(hryear4, 2017, 2019, 2021, 2023)
+* Declare the survey design using the household supplement weight; no explicit
+* clustering/strata needed here because BRR replicate weights are handled separately
 svyset [pw=hhsupwgt]
 
 * ---- Recode 1=Yes / 2=No variables to 0/1 --------------------------------
+* Each original variable codes 1=Yes, 2=No; this loop creates a _b version
+* coded 1=Yes, 0=No, missing for any other value (skips, refusals, etc.)
 foreach v of varlist                                                         ///
     huse12mo huse12cc huse12mt huse12rm huse12rmany                         ///
     husenowops husenowpp huse12afsc                                          ///
@@ -55,24 +64,32 @@ foreach v of varlist                                                         ///
     hcred12bnpl hcred12bnpldq huse12cryp                                    ///
     hbnkaccm1v2 hbnkaccm2v2 hbnkaccm3v2                                     ///
     hbnkaccm4v2 hbnkaccm5v2 hbnkaccm6v2 {
+    * `capture` absorbs "variable already exists" errors on re-run
     capture gen byte `v'_b = (`v' == 1) if inlist(`v', 1, 2)
 }
 
+* Create binary banking-status indicators from their source variables;
+* `inlist` restricts to valid response codes, leaving skip/refusal as missing
 gen byte unbanked          = (hunbnk == 1)          if inlist(hunbnk, 1, 2)
 gen byte underbanked       = (hbankstatv6 == 2)     if inlist(hbankstatv6, 1, 2, 3)
 gen byte cashonly_unbanked = (hunbnkcashonly == 1)  if inlist(hunbnkcashonly, 1, 2)
 
 * ---- Year variable ---------------------------------------------------------
 * hryear4 is already in the multiyear data; rename for consistency with templates.
+* A short name also makes factor-variable notation cleaner (e.g. ib2021.year)
 rename hryear4 year
 label variable year "Survey year"
 
 * ---- all_hh: constant for "All households" rows in collect ----------------
+* Setting this to 1 for every observation gives collect/svy a grouping variable
+* that produces a single aggregate row with no subsetting
 gen byte all_hh = 1
-label define all_hh_lbl 1 "All households"
+label define all_hh_lbl 1 "All households"  // value label used in collect output
 label values all_hh all_hh_lbl
 
 * ---- Demographic variable globals -----------------------------------------
+* nControls drives the forvalues loops that iterate over demographic cuts;
+* Controls1–Controls7 list the variables in the order rows should appear in output
 global nControls 7
 global Controls1 praceeth
 global Controls2 pagegrp
@@ -83,9 +100,16 @@ global Controls6 hhtypev2
 global Controls7 gtmetsta
 
 * ---- build_demo_rows -------------------------------------------------------
+* Defines every row in a standard demographic table: its display label (lab),
+* the grouping variable (dv), and the value of that variable for this row (dval).
+* Rows with dv=="header" are section dividers (no regression run for them).
+* Rows with dv=="all" use the full sample (no group filter in the regression).
+* All macros are returned via c_local so they're visible to the calling scope.
+* Drop any prior definition so the file can be re-sourced without error
 capture program drop build_demo_rows
 program define build_demo_rows
-    local k 0
+    local k 0   // row counter; incremented before each definition
+    * Each line: bump counter, then set three c_locals for label, variable, value
     local ++k; c_local lab`k' "All households";         c_local dv`k' "all";               c_local dval`k' 0
     local ++k; c_local lab`k' "Race/Ethnicity";          c_local dv`k' "header";            c_local dval`k' 0
     local ++k; c_local lab`k' "  Black";                 c_local dv`k' "praceeth";          c_local dval`k' 1
@@ -130,6 +154,7 @@ program define build_demo_rows
     local ++k; c_local lab`k' "  Metropolitan";          c_local dv`k' "gtmetsta";          c_local dval`k' 1
     local ++k; c_local lab`k' "  Nonmetropolitan";       c_local dv`k' "gtmetsta";          c_local dval`k' 2
     local ++k; c_local lab`k' "  Not identified";        c_local dv`k' "gtmetsta";          c_local dval`k' 3
+    * Pass the total row count back to the calling scope
     c_local nrows `k'
 end
 
@@ -160,22 +185,30 @@ local diff_to    2023           // to this year
 local subpop     ""             // "" = all HH; e.g. "hunbnk==2" = banked only
 local xlfile     "${output}/table_A_example.xlsx"
 local sheet      "Table 1.1"
+* Use "replace" for the first (or only) sheet; use "modify" when adding a second
+* sheet to a file that already exists from an earlier putexcel call
 local filemode   replace
 * ---- END CONFIGURE ---------------------------------------------------------
 
+* Count how many years are listed — used to size result matrices and locate columns
 local nyears = wordcount("`years'")
+* Master list of Excel column letters for converting a numeric index to a letter
 local colnames "A B C D E F G H I J K L M N O P Q R S T U V W X Y Z"
 
+* Populate lab*, dv*, dval*, and nrows locals in the current scope
 build_demo_rows   // sets lab1...labN, dv1...dvN, dval1...dvalN, nrows
 
 * Restrict regression to only the years being shown (exclude e.g. year2017)
+* subinstr converts space-separated "2019 2021 2023" → "2019,2021,2023" for inlist()
 local year_comma = subinstr("`years'", " ", ",", .)
 
 * Base universe: correct years + optional subpop restriction
+* Build the if-condition string once so both regression branches share the same filter
 if "`subpop'" == "" local universe "inlist(year, `year_comma')"
 else                 local universe "inlist(year, `year_comma') & (`subpop')"
 
 * Matrices: M = year estimates (%), DIFF = diff column (%)
+* Initialize both with missing so any skipped row stays blank in the output
 matrix M    = J(`nrows', `nyears', .)
 matrix DIFF = J(`nrows', 1, .)
 
@@ -185,34 +218,43 @@ matrix DIFF = J(`nrows', 1, .)
 * _b[`diff_to'.year] is directly the diff we want to display and test.
 
 forvalues i = 1/`nrows' {
+    * Header rows have no associated group variable — skip them entirely
     if "`dv`i''" == "header" continue
 
     if "`dv`i''" == "all" {
+        * "All households" row: no group filter, just restrict to the analysis years
+        * `capture quietly` suppresses output and catches failures without stopping the loop
         capture quietly svy, subpop(if `universe'): ///
             reg `outcome' ib`diff_from'.year
     }
     else {
+        * Demographic subgroup row: restrict to the specific value of the grouping variable
         capture quietly svy, subpop(if `universe' & `dv`i''==`dval`i''): ///
             reg `outcome' ib`diff_from'.year
     }
 
+    * Skip storing results if the regression failed or the subpop is too small to report
     if _rc != 0 | e(N_sub) < 5 continue
 
-    * Store coefficient vector for safe lookup by column name
+    * Copy the coefficient row vector into a named matrix so we can look up
+    * columns by name (colnumb) rather than by fragile numeric position
     matrix BETA = e(b)
 
-    * Base year estimate (= _b[_cons] since diff_from is the reference)
+    * The intercept (_cons) is the estimated mean for the base year (diff_from),
+    * because diff_from is the omitted category in the ib. factor-variable notation
     local base = BETA[1, colnumb(BETA, "_cons")]
 
-    * Fill year estimate columns
+    * Fill the year-estimate columns of matrix M
     local c = 0
     foreach yr of local years {
         local ++c
         if `yr' == `diff_from' {
+            * Base year: just the intercept, scaled from proportion to percentage
             matrix M[`i', `c'] = `base' * 100
         }
         else {
-            * colnumb returns missing (.) if the coefficient was dropped
+            * Other years: intercept + year coefficient gives the mean for that year
+            * colnumb returns missing (.) if the coefficient was dropped (empty cell)
             local cn = colnumb(BETA, "`yr'.year")
             if `cn' < . {
                 matrix M[`i', `c'] = (`base' + BETA[1, `cn']) * 100
@@ -220,43 +262,47 @@ forvalues i = 1/`nrows' {
         }
     }
 
-    * Diff column: coefficient on diff_to year (already relative to diff_from)
+    * Diff column: _b[diff_to.year] is already the change relative to diff_from,
+    * so no subtraction needed — the regression parameterization does the work
     local cn_diff = colnumb(BETA, "`diff_to'.year")
     if `cn_diff' < . {
         matrix DIFF[`i', 1] = BETA[1, `cn_diff'] * 100
-        * t-statistic from regression SE (no manual sqrt(SE1²+SE2²) needed)
+        * t-statistic uses the regression SE, which already accounts for the
+        * survey design via svy:; no manual sqrt(SE1²+SE2²) calculation needed
         local t = abs(BETA[1, `cn_diff']) / _se[`diff_to'.year]
-        if      `t' > 2.576 local sig`i' "**"
-        else if `t' > 1.96  local sig`i' "*"
-        else                 local sig`i' ""
+        if      `t' > 2.576 local sig`i' "**"   // p < 0.01 (two-tailed)
+        else if `t' > 1.96  local sig`i' "*"    // p < 0.05 (two-tailed)
+        else                 local sig`i' ""     // not significant
     }
 }
 
 * ---- Export to Excel -------------------------------------------------------
+* Open the workbook; `filemode` is "replace" for first sheet, "modify" for additional sheets
 putexcel set "`xlfile'", sheet("`sheet'") `filemode'
 
-* Column headers
+* Column headers: A = row labels, then one column per year, then diff and sig
 putexcel A1 = "Group"
 local c = 1
 foreach yr of local years {
-    local ++c
+    local ++c   // advance column index before writing (B, C, D, ...)
     putexcel `=word("`colnames'", `c')'1 = "`yr'"
 }
+* Diff and significance columns sit immediately after the last year column
 local c_diff = `nyears' + 2
 local c_sig  = `nyears' + 3
 putexcel `=word("`colnames'", `c_diff')'1 = "Diff (`diff_to'–`diff_from')"
 putexcel `=word("`colnames'", `c_sig')'1  = "Sig"
 
-* Row labels
+* Row labels: data rows start at row 2 (row 1 holds headers)
 forvalues i = 1/`nrows' {
     putexcel A`=`i'+1' = "`lab`i''"
 }
 
-* Year estimates and diff (two matrix calls)
+* Dump both result matrices in a single call each; Stata fills the block automatically
 putexcel B2 = matrix(M),    nformat("0.0")
 putexcel `=word("`colnames'", `c_diff')'2 = matrix(DIFF), nformat("0.0")
 
-* Significance strings
+* Write significance stars only where non-empty to avoid overwriting with blank strings
 forvalues i = 1/`nrows' {
     if "`sig`i''" != "" {
         putexcel `=word("`colnames'", `c_sig')'`=`i'+1' = "`sig`i''"
@@ -286,25 +332,35 @@ local xlfile     "${output}/table_B_example.xlsx"
 local sheet      "Table B"
 * ---- END CONFIGURE ---------------------------------------------------------
 
+* Build the collect statistic() option string dynamically from the outcomes list;
+* each outcome gets its own `statistic(mean varname)` clause
 local stat_string ""
 foreach out of local outcomes {
     local stat_string "`stat_string' statistic(mean `out')"
 }
 
+* collect uses a pre-existing 0/1 year indicator rather than a subpop() option,
+* so construct the if-condition as a string for reuse across collect calls
 if "`subpop'" == "" local sp "year`year'==1"
 else                 local sp "year`year'==1 & (`subpop')"
 
+* Clear any results from a previous collect run before accumulating new chunks
 collect clear
 
+* "All households" row: tag this chunk with demo[all_hh] so the layout step
+* can place it as the first row of the output table
 collect, tag(demo[all_hh]): ///
     svy, subpop(if `sp'): table all_hh, `stat_string'
 
+* One collect call per demographic variable; each chunk is tagged with its variable
+* name so the layout step can stack them in the correct row order
 forvalues i = 1/$nControls {
     local dv ${Controls`i'}
     collect, tag(demo[`dv']): ///
         svy, subpop(if `sp'): table `dv', `stat_string'
 }
 
+* Rename the internal result labels (mean(varname)) to human-readable column headers
 local k = 0
 foreach out of local outcomes {
     local ++k
@@ -312,14 +368,19 @@ foreach out of local outcomes {
     collect label levels result "mean(`out')" "`lbl'", modify
 }
 
+* Build the row-dimension string: all_hh first, then each demographic variable,
+* each prefixed with its demo[] tag so collect knows which chunk to draw from
 local row_dim "demo[all_hh]#all_hh"
 forvalues i = 1/$nControls {
     local row_dim "`row_dim' demo[${Controls`i'}]#${Controls`i'}"
 }
 
+* Arrange collected results: rows = demographic groups, columns = outcome means
 collect layout (`row_dim') (result)
+* Format all estimate cells to one decimal place
 collect style cell, nformat(%6.1f)
 
+* Write the formatted table to Excel
 collect export "`xlfile'", sheet("`sheet'") replace
 di "Template B complete → `xlfile' [sheet: `sheet']"
 
@@ -337,13 +398,18 @@ local xlfile   "${output}/table_C_example.xlsx"
 local sheet    "Table C"
 * ---- END CONFIGURE ---------------------------------------------------------
 
+* Build the year + optional subpop filter (same pattern as Template B)
 if "`subpop'" == "" local sp "year`year'==1"
 else                 local sp "year`year'==1 & (`subpop')"
 
+* Clear any prior collect results before running the proportion estimate
 collect clear
+* `svy: proportion` estimates the weighted share of each category of catvar
 svy, subpop(if `sp'): proportion `catvar'
 
+* Layout: rows = category values, column = the point estimate (_r_b)
 collect layout (`catvar') (result[_r_b])
+* Multiply proportions by 100 and format to one decimal place for display
 collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
 
 collect export "`xlfile'", sheet("`sheet'") replace
@@ -358,22 +424,29 @@ di "Template C complete → `xlfile' [sheet: `sheet']"
 * ---- CONFIGURE (edit these) -----------------------------------------------
 local catvar   hbankint
 local years    "2019 2021 2023"
-local subpop   "hunbnk==1"
+local subpop   "hunbnk==1"   // e.g. restrict to unbanked households only
 local xlfile   "${output}/table_D_example.xlsx"
 local sheet    "Table 1.4"
 * ---- END CONFIGURE ---------------------------------------------------------
 
+* Clear any prior collect results before accumulating year-by-year chunks
 collect clear
 
+* Run a separate proportion estimate for each year and tag it with the year value
+* so the layout step can place each as its own row
 foreach yr of local years {
+    * Build the year + subpop filter for this iteration
     if "`subpop'" == "" local sp "year`yr'==1"
     else                 local sp "year`yr'==1 & (`subpop')"
 
+    * Tag this chunk with year[yr] so the layout step can use it as a row dimension
     collect, tag(year[`yr']): ///
         svy, subpop(if `sp'): proportion `catvar'
 }
 
+* Arrange results: rows = survey years, columns = response categories of catvar
 collect layout (year) (`catvar')
+* Convert proportions to percentages and format to one decimal place
 collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
 
 collect export "`xlfile'", sheet("`sheet'") replace
