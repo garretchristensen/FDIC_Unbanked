@@ -386,7 +386,9 @@ forvalues i = 1/$nControls {
 }
 
 * Arrange: rows = demographic groups, columns = outcome variables (already in %)
-collect layout (`row_dim') (var)
+* var#result[_r_b] pins the column dimension to point estimates only;
+* without the result[] qualifier, collect has no default and finds no items
+collect layout (`row_dim') (var#result[_r_b])
 * No transform() needed — values are already percentage points
 collect style cell result[_r_b], nformat(%6.1f)
 
@@ -428,8 +430,9 @@ foreach lev of local cat_levels {
 }
 
 collect clear
-* Single svy:mean call across all category indicators
-svy, subpop(if `sp'): mean `cat_vars'
+* Single svy:mean call across all category indicators; collect prefix is required
+* to add results to the collection — without it, collect layout finds nothing
+collect: svy, subpop(if `sp'): mean `cat_vars'
 
 * Apply value-label–based display names to the var dimension
 foreach lev of local cat_levels {
@@ -493,7 +496,8 @@ foreach lev of local cat_levels {
 }
 
 * Layout: rows = survey years, columns = response category indicators (already in %)
-collect layout (year) (var)
+* var#result[_r_b] pins columns to point estimates only — same fix as Template B
+collect layout (year) (var#result[_r_b])
 collect style cell result[_r_b], nformat(%6.1f)
 
 collect export "`xlfile'", sheet("`sheet'") replace
