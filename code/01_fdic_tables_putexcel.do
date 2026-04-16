@@ -44,7 +44,7 @@ keep if inlist(hryear4, ${Y1}, ${Y2}, ${Y3})
 tempfile repwgts
 preserve
     import delimited "${data}/hhmultiyear/hhrep19_23.csv", ///
-        clear varnames(1) numericols(auto)
+        clear varnames(1)
     keep hryear4 qstnum repwgt1-repwgt160
     keep if inlist(hryear4, ${Y1}, ${Y2}, ${Y3})
     save `repwgts'

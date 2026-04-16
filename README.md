@@ -60,8 +60,10 @@ Run `01_fdic_tables_putexcel.do` — produces one `.xlsx` per table section in `
 
 ### Analysis scripts
 
-**`01_fdic_tables_putexcel.do`**  
-Main script. Loads the multiyear dataset (2019, 2021, 2023), merges the 160 Census Bureau BRR replicate weights from `hhmultiyear/hhrep19_23.csv`, and writes each table to Excel. Layout exactly matches the published report: `Characteristic | 2019 | 2021 | 2023 | Difference (2023–2021)`. Significance (`*`) at the 10 percent level using BRR standard errors (Fay factor = 0.5). To update for a future survey year, change `Y1`/`Y2`/`Y3` in Section 0 and update the replicate weight file name.
+**`01_fdic_tables_putexcel.do`** (Stata) / **`01_fdic_tables_r.R`** (R)  
+Main scripts. Load the multiyear dataset (2019, 2021, 2023), merge the 160 Census Bureau BRR replicate weights from `hhmultiyear/hhrep19_23.csv`, and write each table to Excel. Layout exactly matches the published report: `Characteristic | 2019 | 2021 | 2023 | Difference (2023–2021)`. Significance (`*`) at the 10 percent level using BRR standard errors (Fay factor = 0.5, `combined.weights = TRUE` in R's `svrepdesign()`). To update for a future survey year, change `Y1`/`Y2`/`Y3` at the top and update the replicate weight file name.
+
+**R packages required:** `haven`, `survey`, `dplyr`, `openxlsx`
 
 ---
 
@@ -76,19 +78,27 @@ Three progressively more advanced versions of reusable templates covering four t
 | C | Categorical distribution: rows = categories, one column of percentages | Tables 1.2, 3.2 |
 | D | Rows = survey years, columns = ordered response categories | Tables 1.3, 1.4, 2.1, 2.3 |
 
-**`03a_fdic_templates_putexcel.do`**  
-Beginner-friendly version. All four templates use the same three-step pattern: configure, estimate via `svy: mean` loop, export matrix to Excel with `putexcel`. Easiest to follow and modify.
+**`03a_fdic_templates_putexcel.do`** (Stata) / **`03a_fdic_templates_r.R`** (R)  
+Beginner-friendly templates for all four table types (A, B, C, D). Each type is a self-contained, heavily commented example showing the full pattern from data to Excel. The R version uses `survey` + `openxlsx` and is structured so a beginner can copy one function call to produce a new table with future data.
 
-**`03b_fdic_templates_collect.do`**  
-Intermediate version. Types B, C, and D are rewritten using `table` + `collect`, which is more concise and avoids manual matrix indexing. Type A keeps the loop+matrix approach because the diff column requires storing standard errors for a post-hoc z-test, which the `collect` framework does not support natively.
+**`03b_fdic_templates_collect.do`** (Stata only)  
+Intermediate version. Types B, C, and D are rewritten using `table` + `collect`, which is more concise and avoids manual matrix indexing. Type A keeps the loop+matrix approach because the diff column requires storing standard errors for a post-hoc z-test.
 
-**`03c_fdic_templates_collect_reg.do`**  
-Most advanced version. Type A is rewritten to use `svy: reg` (linear probability model) instead of separate `svy: mean` calls per year. A single regression per demographic subgroup yields all year estimates, the difference, and its significance in one model — no post-hoc z-test needed. Types B, C, D unchanged from the collect version.
+**`03c_fdic_templates_collect_reg.do`** (Stata only)  
+Most advanced version. Type A is rewritten to use `svy: reg` (linear probability model). A single regression per demographic subgroup yields all year estimates, the difference, and its significance in one model — no post-hoc z-test needed.
 
 ---
 
 ## Requirements
 
-- Stata 15 or later
-- `hhmultiyears.zip` downloaded from the FDIC website and extracted to `data/` (see Setup above)
-- `output/` directory must exist in the repo root before running `01_`
+**Stata scripts:** Stata 15 or later
+
+**R scripts:** R 4.0 or later with packages: `haven`, `survey`, `dplyr`, `openxlsx`
+
+```r
+install.packages(c("haven", "survey", "dplyr", "openxlsx"))
+```
+
+**Data:** `hhmultiyears.zip` downloaded from the FDIC website and extracted to `data/` (see Setup above)
+
+**Output directory:** `output/` must exist in the repo root (already tracked in git via `.gitkeep`)
