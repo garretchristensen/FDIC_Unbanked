@@ -330,10 +330,10 @@ di "Template A complete → `xlfile' [sheet: `sheet']"
 *=============================================================================
 * TEMPLATE B — Multiple binary outcomes as columns × demographics as rows
 *
-* Note: svy:table is not a supported svy estimation command in Stata 19 with
-* vce(linearized). Restructured to use svy:mean with over(), which is
-* supported and computes all subgroup means in a single svy call per
-* demographic variable (more efficient than one call per category).
+* Uses svy:mean with over() (svy:table not supported with vce(linearized)).
+* Outcomes are pre-scaled to 0–100 before estimation so that means equal
+* percentage points directly — avoids needing transform() in collect style,
+* which is not available in Stata 19.
 *=============================================================================
 
 * ---- CONFIGURE (edit these) -----------------------------------------------
@@ -345,56 +345,61 @@ local xlfile     "${output}/table_B_example.xlsx"
 local sheet      "Table B"
 * ---- END CONFIGURE ---------------------------------------------------------
 
-* year is a 4-digit integer in the 03c dataset (renamed from hryear4), not a 0/1
-* indicator, so filter with == rather than looking up a binary year variable
+* year is a 4-digit integer (renamed from hryear4), not a 0/1 indicator
 if "`subpop'" == "" local sp "year == `year'"
 else                 local sp "year == `year' & (`subpop')"
 
-* Clear any results from a previous collect run before accumulating new chunks
+* Create 0–100 scaled versions of each binary outcome so that the mean equals
+* the percentage directly; drop any leftover _pct vars from a previous run
+local outcomes_pct ""
+foreach out of local outcomes {
+    capture drop `out'_pct
+    gen double `out'_pct = `out' * 100   // 0/1 → 0/100
+    local outcomes_pct "`outcomes_pct' `out'_pct"
+}
+
 collect clear
 
-* "All households" row: mean of all outcomes across the full subpop;
-* over(all_hh) works because all_hh == 1 for every observation
+* All households row: over(all_hh) is harmless because all_hh == 1 everywhere
 collect, tag(demo[all_hh]): ///
-    svy, subpop(if `sp'): mean `outcomes', over(all_hh)
+    svy, subpop(if `sp'): mean `outcomes_pct', over(all_hh)
 
-* One collect call per demographic variable; over() returns all categories in
-* a single svy pass — no loop over individual category values needed
+* One svy:mean call per demographic variable; over() gives all categories at once
 forvalues i = 1/$nControls {
     local dv ${Controls`i'}
     collect, tag(demo[`dv']): ///
-        svy, subpop(if `sp'): mean `outcomes', over(`dv')
+        svy, subpop(if `sp'): mean `outcomes_pct', over(`dv')
 }
 
-* Rename outcome variable labels in the var dimension to display headers;
-* svy:mean places variable names in the var dimension (not result as table did)
+* Rename _pct variable names in the var dimension to human-readable column headers
 local k = 0
 foreach out of local outcomes {
     local ++k
     local lbl : word `k' of `out_labels'
-    collect label levels var `out' "`lbl'", modify
+    collect label levels var `out'_pct "`lbl'", modify
 }
 
-* Build the row-dimension string: all_hh first, then each demographic variable
+* Build row-dimension string: all_hh aggregate first, then each demographic variable
 local row_dim "demo[all_hh]#all_hh"
 forvalues i = 1/$nControls {
     local row_dim "`row_dim' demo[${Controls`i'}]#${Controls`i'}"
 }
 
-* Arrange collected results: rows = demographic groups, columns = outcome variables
-* var dimension holds the outcome names; result[_r_b] is the point estimate
+* Arrange: rows = demographic groups, columns = outcome variables (already in %)
 collect layout (`row_dim') (var)
-* Scale proportions to percentages and format to one decimal place
-collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
+* No transform() needed — values are already percentage points
+collect style cell result[_r_b], nformat(%6.1f)
 
-* Write the formatted table to Excel
 collect export "`xlfile'", sheet("`sheet'") replace
 di "Template B complete → `xlfile' [sheet: `sheet']"
 
 
 *=============================================================================
 * TEMPLATE C — Categorical distribution (one column of percentages)
-* (unchanged from v2)
+*
+* svy:proportion returns 0–1 proportions. To avoid transform() (not available
+* in Stata 19), we instead use svy:mean on 0–100 binary indicators, one per
+* category of catvar. levelsof discovers the categories automatically.
 *=============================================================================
 
 * ---- CONFIGURE (edit these) -----------------------------------------------
@@ -405,19 +410,37 @@ local xlfile   "${output}/table_C_example.xlsx"
 local sheet    "Table C"
 * ---- END CONFIGURE ---------------------------------------------------------
 
-* year is a 4-digit integer in this dataset — filter with == not a binary indicator
 if "`subpop'" == "" local sp "year == `year'"
 else                 local sp "year == `year' & (`subpop')"
 
-* Clear any prior collect results before running the proportion estimate
-collect clear
-* `svy: proportion` estimates the weighted share of each category of catvar
-svy, subpop(if `sp'): proportion `catvar'
+* Discover the category values of catvar present in this year's subpop
+levelsof `catvar' if `sp', local(cat_levels)
 
-* Layout: rows = category values, column = the point estimate (_r_b)
-collect layout (`catvar') (result[_r_b])
-* Multiply proportions by 100 and format to one decimal place for display
-collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
+* Create a 0–100 binary indicator for each category; mean = percentage in that group
+local cat_vars ""
+foreach lev of local cat_levels {
+    capture drop _cind_`lev'
+    gen double _cind_`lev' = (`catvar' == `lev') * 100
+    // label each indicator with the value label so collect uses it as the row header
+    local lbl : label (`catvar') `lev'
+    label variable _cind_`lev' "`lbl'"
+    local cat_vars "`cat_vars' _cind_`lev'"
+}
+
+collect clear
+* Single svy:mean call across all category indicators
+svy, subpop(if `sp'): mean `cat_vars'
+
+* Apply value-label–based display names to the var dimension
+foreach lev of local cat_levels {
+    local lbl : label (`catvar') `lev'
+    collect label levels var _cind_`lev' "`lbl'", modify
+}
+
+* Layout: rows = catvar categories (var dimension), column = point estimate
+collect layout (var) (result[_r_b])
+* Values are already percentages — no transform() needed
+collect style cell result[_r_b], nformat(%6.1f)
 
 collect export "`xlfile'", sheet("`sheet'") replace
 di "Template C complete → `xlfile' [sheet: `sheet']"
@@ -425,7 +448,9 @@ di "Template C complete → `xlfile' [sheet: `sheet']"
 
 *=============================================================================
 * TEMPLATE D — Rows = survey years, columns = ordered response categories
-* (unchanged from v2)
+*
+* Same pre-scaling strategy as Template C: create 0–100 indicators once,
+* then loop over years running svy:mean on those indicators.
 *=============================================================================
 
 * ---- CONFIGURE (edit these) -----------------------------------------------
@@ -436,25 +461,40 @@ local xlfile   "${output}/table_D_example.xlsx"
 local sheet    "Table 1.4"
 * ---- END CONFIGURE ---------------------------------------------------------
 
-* Clear any prior collect results before accumulating year-by-year chunks
+* Discover categories using the full multi-year data (so no category is missed
+* because it only appears in one year)
+levelsof `catvar', local(cat_levels)
+
+* Create 0–100 indicators once; the same set is reused across all year iterations
+local cat_vars ""
+foreach lev of local cat_levels {
+    capture drop _cind_`lev'
+    gen double _cind_`lev' = (`catvar' == `lev') * 100
+    local lbl : label (`catvar') `lev'
+    label variable _cind_`lev' "`lbl'"
+    local cat_vars "`cat_vars' _cind_`lev'"
+}
+
 collect clear
 
-* Run a separate proportion estimate for each year and tag it with the year value
-* so the layout step can place each as its own row
+* One svy:mean call per year; tag with year[yr] so years become rows in the layout
 foreach yr of local years {
-    * year is a 4-digit integer — filter with == not a binary indicator
     if "`subpop'" == "" local sp "year == `yr'"
     else                 local sp "year == `yr' & (`subpop')"
 
-    * Tag this chunk with year[yr] so the layout step can use it as a row dimension
     collect, tag(year[`yr']): ///
-        svy, subpop(if `sp'): proportion `catvar'
+        svy, subpop(if `sp'): mean `cat_vars'
 }
 
-* Arrange results: rows = survey years, columns = response categories of catvar
-collect layout (year) (`catvar')
-* Convert proportions to percentages and format to one decimal place
-collect style cell result[_r_b], nformat(%6.1f) transform(* 100)
+* Apply value-label–based display names to the column headers
+foreach lev of local cat_levels {
+    local lbl : label (`catvar') `lev'
+    collect label levels var _cind_`lev' "`lbl'", modify
+}
+
+* Layout: rows = survey years, columns = response category indicators (already in %)
+collect layout (year) (var)
+collect style cell result[_r_b], nformat(%6.1f)
 
 collect export "`xlfile'", sheet("`sheet'") replace
 di "Template D complete → `xlfile' [sheet: `sheet']"
